@@ -6,20 +6,21 @@
 #include <pwd.h>
 
 
-
+/**
+ * Scans a directory and displays all files that pass given checks
+ * If a directory is found will call itself recursively and decrement depth
+ * 
+*/
 void scanDirectory(char *dir, int depth, char type, char *usr, char *filename, char *result){
 
-
-
-    if (strcmp(dir, "..") == 0){
-        return;
+    if (strcmp(dir, "..") == 0 || depth < 0){
+        return; // Reached max depth, end recursion
     }
+
 
     printf("Scanning %s\n", dir);
 
-    if (depth < 0){
-        return;
-    }
+   
 
     DIR *d;
     struct dirent* data;
@@ -46,17 +47,17 @@ void scanDirectory(char *dir, int depth, char type, char *usr, char *filename, c
         }
 
 
-
+        // If user filter given
         if (usr[0] != '\0'){
             struct passwd *pws;
-            pws = getpwuid(buf.st_uid);
-            if (strcmp(pws->pw_name, usr) > 0){continue;}
+            pws = getpwuid(buf.st_uid); // Get username from uid
+            if (strcmp(pws->pw_name, usr) > 0){continue;} // Check against filter
         }
 
         switch (type){
-            case '\0':
+            case '\0': // If no input
                 break;
-            case 'f':
+            case 'f': // If current file not specified type, continue to next
                 if (!S_ISREG(buf.st_mode)){continue;}
             case 'd':
                 if (!S_ISDIR(buf.st_mode)){continue;}
@@ -69,9 +70,10 @@ void scanDirectory(char *dir, int depth, char type, char *usr, char *filename, c
         }
 
 
+        // If specified filename not default
         if (strcmp(filename, "\0") != 0){
             if (strcmp(filename, data->d_name) != 0){
-                continue;
+                continue; // if file does not match
             }
         }
 
