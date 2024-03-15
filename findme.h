@@ -11,7 +11,7 @@
  * If a directory is found will call itself recursively and decrement depth
  * 
 */
-void scanDirectory(char *dir, int depth, char type, char *usr, char *filename, char *path){
+void scanDirectory(char *dir, int depth, char type, char *usr, char *targetFileName, char *path){
 
     if (strcmp(dir, "..") == 0 || depth < 0){
         return; // Reached max depth, end recursion
@@ -30,25 +30,31 @@ void scanDirectory(char *dir, int depth, char type, char *usr, char *filename, c
     // While there are files in the directory
     while( (data = readdir(d))!=NULL  ){
 
-        char *filename;
-        
-	    if(stat(data->d_name,&buf) < 0){
-	        printf("Cannot open file %s\n", data->d_name);
+        char filename[123];
+        strcpy(filename, path);
+        //char slash = '/';
+        //strncat(filename, &slash, 1);
+        strcat(filename, data->d_name);
+
+
+	    if(stat(filename,&buf) < 0){
+	        printf("Cannot open file %s\n", filename);
             continue;
         }
 
+        //printf("opening %s \n", data->d_name);
         if (S_ISDIR(buf.st_mode)){
             if (strcmp(data->d_name, "..") == 0 || strcmp(data->d_name, ".") == 0 || strcmp(data->d_name, ".git") == 0){continue;} // Skip Same dir and prev dir
-            char newpath[64];
+            char newpath[128];
             strcpy(newpath, path);
             strcat(newpath, data->d_name);
-            printf("found new dir%s\n", data->d_name);
 
-            scanDirectory(data->d_name, --depth, type, usr, filename, newpath);
+            char slash[] = "/";
+            strcat(newpath, slash);
+
+            scanDirectory(newpath, --depth, type, usr, targetFileName, newpath);
             continue;
         }
-
-
         // If user filter given
         if (usr[0] != '\0'){
             struct passwd *pws;
@@ -73,8 +79,9 @@ void scanDirectory(char *dir, int depth, char type, char *usr, char *filename, c
 
 
         // If specified filename not default
-        if (strcmp(filename, "\0") != 0){
-            if (strcmp(filename, data->d_name) != 0){
+        if (strcmp(targetFileName, "\0") != 0){
+            printf("%s", targetFileName);
+            if (strcmp(targetFileName, data->d_name) != 0){
                 continue; // if file does not match
             }
         }
@@ -102,7 +109,11 @@ void findme(char *dir, char type, int depth, char *usr, char *filename){
         exit(EXIT_FAILURE);
     }
 
-    char path[] = "./";
+    char path[128];
+    char slash[] = "/";
+    strcpy(path, dir);
+    strcat(path, slash);
+    
 
     scanDirectory(dir, depth, type, usr, filename, path);
 
