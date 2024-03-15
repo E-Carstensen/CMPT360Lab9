@@ -30,10 +30,9 @@ void scanDirectory(char *dir, int depth, char type, char *usr, char *targetFileN
     // While there are files in the directory
     while( (data = readdir(d))!=NULL  ){
 
+        // Combine file name with current path
         char filename[123];
         strcpy(filename, path);
-        //char slash = '/';
-        //strncat(filename, &slash, 1);
         strcat(filename, data->d_name);
 
 
@@ -45,10 +44,11 @@ void scanDirectory(char *dir, int depth, char type, char *usr, char *targetFileN
         //printf("opening %s \n", data->d_name);
         if (S_ISDIR(buf.st_mode)){
             if (strcmp(data->d_name, "..") == 0 || strcmp(data->d_name, ".") == 0 || strcmp(data->d_name, ".git") == 0){continue;} // Skip Same dir and prev dir
+            // Append directory to path for next run
             char newpath[128];
             strcpy(newpath, path);
             strcat(newpath, data->d_name);
-
+            // Need a slash between directory and next file name
             char slash[] = "/";
             strcat(newpath, slash);
 
@@ -56,7 +56,7 @@ void scanDirectory(char *dir, int depth, char type, char *usr, char *targetFileN
             continue;
         }
         // If user filter given
-        if (usr[0] != '\0'){
+        if (usr[0] != '\0'){ // TODO: student server uses ldapsearch
             struct passwd *pws;
             pws = getpwuid(buf.st_uid); // Get username from uid
             if (strcmp(pws->pw_name, usr) > 0){continue;} // Check against filter
@@ -67,14 +67,19 @@ void scanDirectory(char *dir, int depth, char type, char *usr, char *targetFileN
                 break;
             case 'f': // If current file not specified type, continue to next
                 if (!S_ISREG(buf.st_mode)){continue;}
+                break;
             case 'd':
                 if (!S_ISDIR(buf.st_mode)){continue;}
+                break;
             case 's':
                 if(!S_ISLNK(buf.st_mode)){continue;}
+                break;
             case 'c':
                 if (!S_ISCHR(buf.st_mode)){continue;}
+                break;
             case 'b':
                 if (!S_ISBLK(buf.st_mode)){continue;}
+                break;
         }
 
 
@@ -86,7 +91,7 @@ void scanDirectory(char *dir, int depth, char type, char *usr, char *targetFileN
             }
         }
 
-    printf("%s%s\n",path, data->d_name);
+        printf("%s%s\n",path, data->d_name);
 
     }
 
@@ -109,7 +114,7 @@ void findme(char *dir, char type, int depth, char *usr, char *filename){
         exit(EXIT_FAILURE);
     }
 
-    char path[128];
+    char path[strlen(dir)+2];
     char slash[] = "/";
     strcpy(path, dir);
     strcat(path, slash);

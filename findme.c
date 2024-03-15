@@ -29,7 +29,7 @@ int main(int argc, char *argv[]){
             case 'f':
                 snprintf(filename, sizeof(filename), "%s", optarg);
                 break;
-            default: 
+            default:  /* ? */
                 fprintf(stderr, "Usage: %s -d directory -t type -D depth -u user -f filename (f=regular file, d=directory, s=symbolic link, c=character device, b=block device\n", argv[0]);
                 exit(EXIT_FAILURE);
         }
