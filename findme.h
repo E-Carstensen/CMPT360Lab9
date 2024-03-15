@@ -11,38 +11,40 @@
  * If a directory is found will call itself recursively and decrement depth
  * 
 */
-void scanDirectory(char *dir, int depth, char type, char *usr, char *filename, char *result){
+void scanDirectory(char *dir, int depth, char type, char *usr, char *filename, char *path){
 
     if (strcmp(dir, "..") == 0 || depth < 0){
         return; // Reached max depth, end recursion
     }
-
-
-    printf("Scanning %s\n", dir);
-
    
-
     DIR *d;
     struct dirent* data;
     struct stat buf;
 
-
+    // Attempt to open current directory
     if( (d=opendir(dir))==NULL){
 	    printf("Could not open directory: %s\n", dir);
 	    exit(EXIT_FAILURE);
     }
 
+    // While there are files in the directory
     while( (data = readdir(d))!=NULL  ){
 
+        char *filename;
+        
 	    if(stat(data->d_name,&buf) < 0){
 	        printf("Cannot open file %s\n", data->d_name);
             continue;
         }
 
         if (S_ISDIR(buf.st_mode)){
-            printf("FOUND A DIR?: %s", data->d_name);
-            if (strcmp(dir, "..") == 0 || strcmp(dir, ".") == 0 || strcmp(dir, ".git") == 0){continue;} // Skip Same dir and prev dir
-            scanDirectory(data->d_name, --depth, type, usr, filename, result);
+            if (strcmp(data->d_name, "..") == 0 || strcmp(data->d_name, ".") == 0 || strcmp(data->d_name, ".git") == 0){continue;} // Skip Same dir and prev dir
+            char newpath[64];
+            strcpy(newpath, path);
+            strcat(newpath, data->d_name);
+            printf("found new dir%s\n", data->d_name);
+
+            scanDirectory(data->d_name, --depth, type, usr, filename, newpath);
             continue;
         }
 
@@ -77,7 +79,7 @@ void scanDirectory(char *dir, int depth, char type, char *usr, char *filename, c
             }
         }
 
-    printf("%s\n", data->d_name);
+    printf("%s%s\n",path, data->d_name);
 
     }
 
@@ -85,7 +87,7 @@ void scanDirectory(char *dir, int depth, char type, char *usr, char *filename, c
 
 }
 
-void findme(char *dir, char type, int depth, char *usr, char *filename, char *result){
+void findme(char *dir, char type, int depth, char *usr, char *filename){
 
     struct stat buff;
 
@@ -100,8 +102,9 @@ void findme(char *dir, char type, int depth, char *usr, char *filename, char *re
         exit(EXIT_FAILURE);
     }
 
+    char path[] = "./";
 
-    scanDirectory(dir, depth, type, usr, filename, result);
+    scanDirectory(dir, depth, type, usr, filename, path);
 
 }
 

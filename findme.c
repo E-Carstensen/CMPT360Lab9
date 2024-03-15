@@ -37,10 +37,8 @@ int main(int argc, char *argv[]){
     }
 
     printf("%s", filename);
-    char result[128];
 
-    findme(dir, type, depth, usr, filename, result);
-    printf("%s", result);
+    findme(dir, type, depth, usr, filename);
 
     return 1;
 }
