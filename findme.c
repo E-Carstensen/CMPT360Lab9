@@ -5,7 +5,7 @@
 
 
 int main(int argc, char *argv[]){
-    char dir[32];
+    char dir[128] = "\0";
     char type = '\0';
     int depth = 0;
     char usr[32] = "\0";
@@ -30,13 +30,16 @@ int main(int argc, char *argv[]){
                 snprintf(filename, sizeof(filename), "%s", optarg);
                 break;
             default:  /* ? */
-                fprintf(stderr, "Usage: %s -d directory -t type -D depth -u user -f filename (f=regular file, d=directory, s=symbolic link, c=character device, b=block device\n", argv[0]);
+                fprintf(stderr, "Usage: %s -d directory -t type -D depth -u user -f filename (f=regular file, d=directory, s=symbolic link, c=character device, b=block device)\n", argv[0]);
                 exit(EXIT_FAILURE);
         }
     
     }
 
-    printf("%s", filename);
+    if (strcmp(dir, "\0") == 0){
+        fprintf(stderr, "Usage: %s -d directory -t type -D depth -u user -f filename (f=regular file, d=directory, s=symbolic link, c=character device, b=block device)\n", argv[0]);
+        exit(EXIT_FAILURE);
+    }
 
     findme(dir, type, depth, usr, filename);
 
