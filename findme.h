@@ -4,7 +4,9 @@
 #include<sys/stat.h>
 #include <string.h>
 #include <pwd.h>
-
+#include <unistd.h>
+#include <sys/types.h>
+#include <sys/wait.h>
 
 /**
  * Scans a directory and displays all files that pass given checks
@@ -12,6 +14,8 @@
  * 
 */
 void scanDirectory(char *dir, int depth, char type, char *usr, char *targetFileName, char *path){
+    pid_t child_pid;
+    int status;
 
     if (strcmp(dir, "..") == 0 || depth < 0){
         return; // Reached max depth, end recursion
@@ -27,8 +31,11 @@ void scanDirectory(char *dir, int depth, char type, char *usr, char *targetFileN
 	    exit(EXIT_FAILURE);
     }
 
+    
+
     // While there are files in the directory
     while( (data = readdir(d))!=NULL  ){
+        
 
         // Combine file name with current path
         char filename[123];
@@ -43,6 +50,10 @@ void scanDirectory(char *dir, int depth, char type, char *usr, char *targetFileN
 
         //printf("opening %s \n", data->d_name);
         if (S_ISDIR(buf.st_mode)){
+            
+            child_pid = fork();
+            printf("forked PID : %d\n",child_pid);
+            
             if (strcmp(data->d_name, "..") == 0 || strcmp(data->d_name, ".") == 0 || strcmp(data->d_name, ".git") == 0){continue;} // Skip Same dir and prev dir
             // Append directory to path for next run
             char newpath[128];
@@ -53,6 +64,7 @@ void scanDirectory(char *dir, int depth, char type, char *usr, char *targetFileN
             strcat(newpath, slash);
 
             scanDirectory(newpath, --depth, type, usr, targetFileName, newpath);
+            waitpid(child_pid,&status,0);
             continue;
         }
         // If user filter given
@@ -85,7 +97,7 @@ void scanDirectory(char *dir, int depth, char type, char *usr, char *targetFileN
 
         // If specified filename not default
         if (strcmp(targetFileName, "\0") != 0){
-            printf("%s", targetFileName);
+            printf("%s\n", targetFileName);
             if (strcmp(targetFileName, data->d_name) != 0){
                 continue; // if file does not match
             }
@@ -100,6 +112,8 @@ void scanDirectory(char *dir, int depth, char type, char *usr, char *targetFileN
 }
 
 void findme(char *dir, char type, int depth, char *usr, char *filename){
+    
+
 
     struct stat buff;
 
@@ -119,9 +133,9 @@ void findme(char *dir, char type, int depth, char *usr, char *filename){
     strcpy(path, dir);
     strcat(path, slash);
     
-
+    
     scanDirectory(dir, depth, type, usr, filename, path);
-
+    
 }
 
 
