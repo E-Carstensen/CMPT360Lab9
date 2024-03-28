@@ -4,6 +4,8 @@
 #include<sys/stat.h>
 #include <string.h>
 #include <pwd.h>
+#include "thread.h"
+#include "inputs.h"
 
 
 /**
@@ -11,28 +13,34 @@
  * If a directory is found will call itself recursively and decrement depth
  * 
 */
-void scanDirectory(char *dir, int depth, char type, char *usr, char *targetFileName, char *path){
+void* scanDirectory(void *rawInput){
 
-    if (strcmp(dir, "..") == 0 || depth < 0){
-        return; // Reached max depth, end recursion
+    struct inputs* input = (struct inputs*) rawInput;
+
+
+    if (strcmp(input->dir, "..") == 0 || input->depth < 0){
+        return NULL; // Reached max depth, end recursion
     }
    
     DIR *d;
     struct dirent* data;
     struct stat buf;
+    pthread_t nextThread;
+    
 
     // Attempt to open current directory
-    if( (d=opendir(dir))==NULL){
-	    printf("Could not open directory: %s\n", dir);
+    if( (d=opendir(input->dir))==NULL){
+	    printf("Could not open directory: %s\n", input->dir);
 	    exit(EXIT_FAILURE);
     }
 
     // While there are files in the directory
     while( (data = readdir(d))!=NULL  ){
-
         // Combine file name with current path
+
         char filename[123];
-        strcpy(filename, path);
+
+        strcpy(filename, input->path);
         strcat(filename, data->d_name);
 
 
@@ -43,26 +51,37 @@ void scanDirectory(char *dir, int depth, char type, char *usr, char *targetFileN
 
         //printf("opening %s \n", data->d_name);
         if (S_ISDIR(buf.st_mode)){
-            if (strcmp(data->d_name, "..") == 0 || strcmp(data->d_name, ".") == 0 || strcmp(data->d_name, ".git") == 0){continue;} // Skip Same dir and prev dir
+            if (data->d_name[0] == '.'){continue;} // Skip Same dir and prev dir
+
+            printf("NEW DIR - %s", data->d_name);
             // Append directory to path for next run
+
             char newpath[128];
-            strcpy(newpath, path);
+            strcpy(newpath, input->path);
             strcat(newpath, data->d_name);
+
             // Need a slash between directory and next file name
             char slash[] = "/";
             strcat(newpath, slash);
 
-            scanDirectory(newpath, --depth, type, usr, targetFileName, newpath);
+            struct inputs *copy = deepCopyInputs(*input);
+            copy->depth--;
+
+            pthread_create(&nextThread, NULL, scanDirectory, (void *) copy);
+
+            pthread_join(nextThread, NULL);
+            free(copy);            
+            //scanDirectory(newpath, --depth, type, usr, targetFileName, newpath);
             continue;
         }
         // If user filter given
-        if (usr[0] != '\0'){ // TODO: student server uses ldapsearch
+        if (input->usr[0] != '\0'){ // TODO: student server uses ldapsearch
             struct passwd *pws;
             pws = getpwuid(buf.st_uid); // Get username from uid
-            if (strcmp(pws->pw_name, usr) > 0){continue;} // Check against filter
+            if (strcmp(pws->pw_name, input->usr) > 0){continue;} // Check against filter
         }
 
-        switch (type){
+        switch (input->type){
             case '\0': // If no input
                 break;
             case 'f': // If current file not specified type, continue to next
@@ -84,18 +103,20 @@ void scanDirectory(char *dir, int depth, char type, char *usr, char *targetFileN
 
 
         // If specified filename not default
-        if (strcmp(targetFileName, "\0") != 0){
-            printf("%s", targetFileName);
-            if (strcmp(targetFileName, data->d_name) != 0){
+        if (strcmp(input->targetFileName, "\0") != 0){
+            printf("%s", input->targetFileName);
+            if (strcmp(input->targetFileName, data->d_name) != 0){
                 continue; // if file does not match
             }
         }
 
-        printf("%s%s\n",path, data->d_name);
+        printf("%s%s\n",input->path, data->d_name);
 
     }
 
 
+
+return NULL;
 
 }
 
@@ -118,9 +139,19 @@ void findme(char *dir, char type, int depth, char *usr, char *filename){
     char slash[] = "/";
     strcpy(path, dir);
     strcat(path, slash);
-    
 
-    scanDirectory(dir, depth, type, usr, filename, path);
+    struct inputs *input = (struct inputs*) malloc(sizeof(struct inputs));
+    input->depth = depth;
+    input->dir = dir;
+    input->path=path;
+    input->targetFileName = filename;
+    input->type = type;
+    input->usr = usr;
+    
+    struct inputs *copy;
+    copy = deepCopyInputs(*input);
+
+    scanDirectory(copy);
 
 }
 
