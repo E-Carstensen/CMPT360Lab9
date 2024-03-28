@@ -11,6 +11,15 @@ int main(int argc, char *argv[]){
     char usr[32] = "\0";
     char filename[32] = "\0";
 
+     if (argc < 2) {
+        fprintf(stderr, "Usage: %s directory -t type -D depth -u user -f filename (f=regular file, d=directory, s=symbolic link, c=character device, b=block device)\n", argv[0]);
+        exit(EXIT_FAILURE);
+    }
+
+
+    strncpy(dir, argv[1], sizeof(dir) - 1);
+    dir[sizeof(dir) - 1] = '\0'; 
+
     int opt;
     while ((opt = getopt(argc, argv, "d:t:D:u:f:")) != -1) {
         switch (opt) {

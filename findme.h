@@ -4,9 +4,8 @@
 #include<sys/stat.h>
 #include <string.h>
 #include <pwd.h>
-#include "thread.h"
 #include "inputs.h"
-
+#include <pthread.h>
 
 /**
  * Scans a directory and displays all files that pass given checks
@@ -64,6 +63,7 @@ void* scanDirectory(void *rawInput){
             char slash[] = "/";
             strcat(newpath, slash);
 
+            copy->dir = newpath;
             copy->path = newpath;
             copy->depth--;
 
@@ -152,6 +152,9 @@ void findme(char *dir, char type, int depth, char *usr, char *filename){
     copy = deepCopyInputs(*input);
 
     scanDirectory(copy);
+
+    free(copy);
+    free(input);
 
 }
 
