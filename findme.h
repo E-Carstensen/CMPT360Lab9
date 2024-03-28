@@ -53,8 +53,8 @@ void* scanDirectory(void *rawInput){
         if (S_ISDIR(buf.st_mode)){
             if (data->d_name[0] == '.'){continue;} // Skip Same dir and prev dir
 
-            printf("NEW DIR - %s", data->d_name);
             // Append directory to path for next run
+            struct inputs *copy = deepCopyInputs(*input);
 
             char newpath[128];
             strcpy(newpath, input->path);
@@ -64,7 +64,7 @@ void* scanDirectory(void *rawInput){
             char slash[] = "/";
             strcat(newpath, slash);
 
-            struct inputs *copy = deepCopyInputs(*input);
+            copy->path = newpath;
             copy->depth--;
 
             pthread_create(&nextThread, NULL, scanDirectory, (void *) copy);
